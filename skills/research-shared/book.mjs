@@ -13,12 +13,12 @@ import { claims as claimsOf, firstTable, parseFile, parseMarkdown, stripTags, ta
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SHELL = join(HERE, 'book-shell');
 
-export const VIEWS = ['overview', 'summary', 'industry', 'competitors', 'voice', 'affinity', 'cardsort', 'empathy', 'personas', 'jobs', 'journeys', 'validation', 'interview', 'usability', 'diary', 'survey', 'sources'];
-const OUTPUT_VIEWS = ['summary', 'industry', 'competitors', 'voice', 'affinity', 'cardsort', 'empathy', 'personas', 'jobs', 'journeys', 'validation', 'interview', 'usability', 'diary', 'survey'];
+export const VIEWS = ['overview', 'summary', 'affinity', 'cardsort', 'empathy', 'personas', 'jobs', 'journeys', 'interview', 'usability', 'diary', 'survey', 'sources'];
+const OUTPUT_VIEWS = ['summary', 'affinity', 'cardsort', 'empathy', 'personas', 'jobs', 'journeys', 'interview', 'usability', 'diary', 'survey'];
 const PLAN_VIEWS = ['interview', 'usability', 'diary', 'survey'];
 const FILE = {
-  summary: 'summary.md', industry: 'industry.md', competitors: 'competitors.md', voice: 'voice.md', affinity: 'affinity.md', cardsort: 'cardsort.md', empathy: 'empathy.md',
-  jobs: 'jobs.md', personas: 'personas.md', journeys: 'journeys.md', validation: 'validation.md',
+  summary: 'summary.md', affinity: 'affinity.md', cardsort: 'cardsort.md', empathy: 'empathy.md',
+  jobs: 'jobs.md', personas: 'personas.md', journeys: 'journeys.md',
   interview: 'interview-script.md', usability: 'usability-plan.md', diary: 'diary-study.md', survey: 'survey.md',
 };
 const SKILL = {
@@ -86,7 +86,7 @@ const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(
 const num = (s) => { const n = Number(String(s).replace(/[,\s]/g, '')); return Number.isFinite(n) && String(s).trim() !== '' ? n : null; };
 const sentence = (s) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
-const KEEP = new Set(['Evidence', 'Date', 'Year', 'Since', 'Published', 'Fetched', 'Value', 'Unit', 'Position', 'Emotion', 'Rank', 'Importance', 'Satisfaction', 'Frequency', 'Intensity', 'Score', 'Impact', 'Status', 'Kind', 'Ring', 'Direction', 'Rating', 'Type', 'Reaches buyers', 'Backed by', 'ID', 'Where', 'Code', 'Hash', 'People', 'When']);
+const KEEP = new Set(['Evidence', 'Published', 'Fetched', 'Position', 'Emotion', 'Importance', 'Satisfaction', 'Status', 'Kind', 'ID', 'Where', 'Code', 'Hash', 'People', 'When']);
 
 function tableOf(container) {
   const block = container && firstTable(container);
@@ -291,128 +291,11 @@ const confOf = (sec) => (sec?.confidence ? sec.confidence : undefined);
 const bannerOf = (doc) => {
   const real = doc?.banner?.match(/^From research:\s*(\d+) people?,\s*(\d+) organisations?/i);
   if (real) return { proto: false, real: true, n: Number(real[1]), m: Number(real[2]), text: doc.banner.trim() };
-  const m = doc?.banner?.match(/^(Proto|Validated):\s*(\d+) of (\d+)/);
-  return m ? { proto: m[1] === 'Proto', n: Number(m[2]), m: Number(m[3]), text: doc.banner.split('. ')[0].replace(/\.$/, '') + '.' } : null;
+  const m = doc?.banner?.match(/^Proto:\s*(\d+) of (\d+)/);
+  return m ? { proto: true, n: Number(m[1]), m: Number(m[2]), text: doc.banner.split('. ')[0].replace(/\.$/, '') + '.' } : null;
 };
 
 // ---------- views ----------
-
-function industryView(ctx) {
-  const doc = ctx.docs.industry; if (!doc) return null;
-  const r = new Registry(ctx);
-  const lines = (name) => { const s = section(doc, name); return { conf: confOf(s), items: bulletsOf(s).map((b) => r.fromBullet(b)) }; };
-  const out = { name: ctx.name, means: lines('What this means for the idea'), definition: lines('Market definition'), buyers: lines('Buyers and budgets') };
-
-  const size = section(doc, 'Market size');
-  out.size = { conf: confOf(size), rows: tableOf(size).map((x) => ({
-    c: r.fromRow(x, 'Measure'), measure: clean(x.cells.Measure), kind: clean(x.cells.Kind).toLowerCase(), value: num(x.cells.Value), unit: clean(x.cells.Unit),
-    working: clean(x.cells.Working), year: clean(x.cells.Year), geo: clean(x.cells.Geography), producer: clean(x.cells.Producer),
-  })), notes: bulletsOf(size).map((b) => r.fromBullet(b)) };
-
-  const chain = section(doc, 'Value chain');
-  out.chain = { conf: confOf(chain), rows: tableOf(chain).map((x) => ({
-    c: r.fromRow(x, 'Step'), step: clean(x.cells.Step), who: clean(x.cells.Who), takes: clean(x.cells.Takes), ...(x.cells.Power ? { power: clean(x.cells.Power) } : {}),
-  })) };
-
-  const forces = section(doc, 'Forces');
-  out.forces = { conf: confOf(forces), rows: tableOf(forces).map((x) => {
-    const d = clean(x.cells.Date).match(/(\d{4})(?:-(\d{2}))?/);
-    return { c: r.fromRow(x, 'Force'), force: clean(x.cells.Force), type: clean(x.cells.Type).toLowerCase(), what: clean(x.cells['What is happening']), date: clean(x.cells.Date), t: d ? Number(d[1]) + (d[2] ? (Number(d[2]) - 0.5) / 12 : 0.5) : null };
-  }) };
-
-  const trends = section(doc, 'Trends');
-  out.trends = { conf: confOf(trends), rows: tableOf(trends).map((x) => ({
-    c: r.fromRow(x, 'Trend'), trend: clean(x.cells.Trend), dir: clean(x.cells.Direction).toLowerCase(), since: clean(x.cells.Since),
-    ...(x.cells['Why now'] ? { why: clean(x.cells['Why now']) } : {}), ...(x.cells['Backed by'] ? { backed: clean(x.cells['Backed by']).toLowerCase() } : {}),
-    ...(x.cells['Reaches buyers'] ? { reaches: clean(x.cells['Reaches buyers']).toLowerCase() } : {}),
-  })) };
-  r.sweep(doc);
-  return r.finish(out);
-}
-
-function competitorsView(ctx) {
-  const doc = ctx.docs.competitors; if (!doc) return null;
-  const r = new Registry(ctx);
-  const out = { name: ctx.name };
-
-  const rings = section(doc, 'Rings');
-  out.rings = { conf: confOf(rings), rows: tableOf(rings).map((x) => ({
-    c: r.fromRow(x, 'Alternative'), name: clean(x.cells.Alternative), ring: clean(x.cells.Ring).toLowerCase(), line: clean(x.cells['One line']),
-    ...(x.cells['Yearly cost'] ? { cost: clean(x.cells['Yearly cost']) } : {}),
-  })) };
-
-  const profiles = section(doc, 'Profiles');
-  out.profiles = { conf: confOf(profiles), items: (profiles?.subsections ?? []).map((sub) => ({
-    name: clean(sub.name),
-    rows: sub.blocks.filter((b) => b.type === 'bullet').map((b) => r.fromBullet(b)),
-  })) };
-
-  const grave = section(doc, 'Graveyard');
-  out.graveyard = { conf: confOf(grave), rows: tableOf(grave).map((x) => ({
-    c: r.fromRow(x, 'Attempt'), name: clean(x.cells.Attempt), what: clean(x.cells['What happened']), year: clean(x.cells.Year), why: clean(x.cells.Why),
-  })) };
-
-  const comp = section(doc, 'Comparison');
-  out.comparison = { conf: confOf(comp), rows: tableOf(comp).map((x) => ({
-    c: r.fromRow(x, 'Job'), job: clean(x.cells.Job), alt: clean(x.cells.Alternative), rating: clean(x.cells.Rating).toLowerCase(),
-  })) };
-
-  const white = section(doc, 'White space');
-  out.white = { conf: confOf(white), items: bulletsOf(white).map((b) => {
-    const { label, rest } = labelOf(b.text);
-    const plain = clean(label ? rest : b.text).match(/^(Unclaimed|Crowded|Vulnerable):\s*(.*)$/i);
-    const kind = (label ?? '').toLowerCase().match(/^(unclaimed|crowded|vulnerable)/)?.[1] ?? plain?.[1].toLowerCase() ?? null;
-    const body = label && kind ? rest : plain ? plain[2] : b.text;
-    return { c: r.claim(body, b.tags, {}, b.line), kind };
-  }) };
-  r.sweep(doc);
-  return r.finish(out);
-}
-
-function voiceView(ctx) {
-  const doc = ctx.docs.voice; if (!doc) return null;
-  const r = new Registry(ctx);
-  const out = { name: ctx.name };
-
-  const mine = section(doc, 'Your participants');
-  const mineRows = tableOf(mine);
-  out.mine = {
-    conf: confOf(mine),
-    rows: mineRows.map((x) => {
-      const q = unquote(clean(x.cells.Verbatim));
-      return { c: r.fromRow(x, 'Verbatim'), v: q.text, who: clean(x.cells.Who), theme: clean(x.cells.Theme), p: [...new Set(x.row.tags.flatMap((t) => t.participants))] };
-    }),
-    notes: bulletsOf(mine).map((b) => r.fromBullet(b)),
-  };
-
-  const pub = section(doc, 'Public voices');
-  const stale = (s) => /\bstale\b/i.test(s);
-  out.publics = { conf: confOf(pub), rows: tableOf(pub).map((x) => {
-    const v = unquote(clean(x.cells.Voice).replace(/^Paraphrase:\s*/i, '')).text;
-    const date = clean(x.cells.Date);
-    return {
-      c: r.fromRow(x, 'Voice'), v, quotedInFile: unquote(clean(x.cells.Voice)).quoted || undefined, who: clean(x.cells.Who), theme: clean(x.cells.Theme),
-      ...(x.cells.Grade ? { grade: clean(x.cells.Grade).toLowerCase() } : {}), type: clean(x.cells['Source type']).toLowerCase(),
-      date: date.replace(/\s*\bstale\b/i, '').trim(), ...(stale(date) ? { stale: 1 } : {}),
-    };
-  }) };
-
-  const themes = section(doc, 'Themes');
-  const rows = tableOf(themes).map((x, i) => ({
-    c: r.fromRow(x, 'Theme'), theme: clean(x.cells.Theme), cluster: clean(x.cells.Cluster).toLowerCase(), freq: num(x.cells.Frequency), intensity: num(x.cells.Intensity),
-    score: num(x.cells.Score), say: clean(x.cells['What people say']),
-    ...(x.cells.Spread ? { spread: clean(x.cells.Spread) } : {}), ...(x.cells.Against ? { against: clean(x.cells.Against) } : {}), i,
-  }));
-  rows.sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || (b.freq ?? -1) - (a.freq ?? -1) || a.i - b.i);
-  out.themes = { conf: confOf(themes), rows: rows.map(({ i, ...rest }) => rest) };
-
-  const words = section(doc, 'The words people use');
-  out.words = { conf: confOf(words), items: bulletsOf(words).map((b) => r.fromBullet(b)) };
-  const means = section(doc, 'What this means for the idea');
-  out.means = { conf: confOf(means), items: bulletsOf(means).map((b) => r.fromBullet(b)) };
-  r.sweep(doc);
-  return r.finish(out);
-}
 
 function jobsView(ctx) {
   const doc = ctx.docs.jobs; if (!doc) return null;
@@ -564,33 +447,6 @@ function journeysView(ctx) {
   return r.finish(out);
 }
 
-function validationView(ctx) {
-  const doc = ctx.docs.validation; if (!doc) return null;
-  const r = new Registry(ctx);
-  const out = { name: ctx.name };
-  const ass = section(doc, 'Assumptions');
-  out.rows = tableOf(ass).map((x) => ({
-    c: r.fromRow(x, 'Assumption'), rank: num(x.cells.Rank), assumption: clean(x.cells.Assumption), impact: clean(x.cells.Impact).toLowerCase(),
-    why: clean(x.cells['Why it matters']), now: clean(x.cells['Evidence now']), status: clean(x.cells.Status).toLowerCase(),
-  }));
-  const plan = section(doc, 'Test plan');
-  out.tests = (plan?.subsections ?? []).map((sub) => {
-    const m = sub.name.match(/^(\d+)\.\s*(.*)$/);
-    const items = [];
-    const questions = [];
-    for (const b of sub.blocks) {
-      if (b.type !== 'bullet') continue;
-      if (b.depth > 0) { questions.push(clean(b.text)); continue; }
-      const { label, rest } = labelOf(b.text);
-      if (label && /^questions?$/i.test(label)) continue;
-      items.push({ label: label ?? '', text: clean(rest) });
-    }
-    return { rank: m ? Number(m[1]) : null, name: clean(m ? m[2] : sub.name), items, questions };
-  });
-  r.sweep(doc);
-  return r.finish(out);
-}
-
 function sourcesView(ctx, cited) {
   if (!Object.keys(ctx.ledger).length && !ctx.studies.length) return null;
   const r = new Registry(ctx);
@@ -618,7 +474,8 @@ function overviewView(ctx, built) {
         const e = (agg[t.b] ??= { verdicts: new Set(), files: new Set(), seen: [], tags: [] });
         e.verdicts.add(t.v);
         e.files.add(view);
-        if (t.v === 'contradicted' || t.v === 'refuted') { e.tags.push(t); e.seen.push({ v: view, t: c.t, row: !!c.r }); }
+        e.tags.push(t);
+        if (t.v === 'contradicted' || t.v === 'refuted') e.seen.push({ v: view, t: c.t, row: !!c.r });
       }
     }
   }
@@ -633,15 +490,20 @@ function overviewView(ctx, built) {
   out.claims = { total: claimTotal, states: claimStates };
 
   const sureness = { 'sure': 0, 'fairly sure': 1, 'guessing': 2 };
-  out.contradicted = ids.filter((id) => ['contradicted', 'refuted'].includes(verdictOf(agg[id]))).map((id) => {
-    const e = agg[id];
+  const WRONG = ['contradicted', 'refuted'];
+  // One belief as a line of the overview, carrying only the tags behind these verdicts.
+  const beliefClaim = (id, verdicts, s) => {
     const seenTag = new Set();
-    const tags = e.tags.filter((t) => { const k = JSON.stringify(t); if (seenTag.has(k)) return false; seenTag.add(k); return true; });
+    const tags = agg[id].tags.filter((t) => { const k = JSON.stringify(t); if (!verdicts.includes(t.v) || seenTag.has(k)) return false; seenTag.add(k); return true; });
     r.bel.add(id);
     tags.forEach((t) => { t.s?.forEach((x) => r.src.add(x)); t.p?.forEach((x) => r.ptc.add(x)); });
-    r.cl.push({ t: ctx.beliefs[id]?.t ?? id, s: 'contradicted', g: tags });
+    r.cl.push({ t: ctx.beliefs[id]?.t ?? id, s, g: tags });
+    return r.cl.length - 1;
+  };
+  out.contradicted = ids.filter((id) => WRONG.includes(verdictOf(agg[id]))).map((id) => {
+    const e = agg[id];
     const best = e.seen.find((x) => !x.row) ?? e.seen[0];
-    return { c: r.cl.length - 1, b: id, verdict: verdictOf(e), files: [...e.files], seen: best ? [best] : [], certainty: ctx.beliefs[id]?.certainty ?? null };
+    return { c: beliefClaim(id, WRONG, 'contradicted'), b: id, verdict: verdictOf(e), files: [...e.files], seen: best ? [best] : [], certainty: ctx.beliefs[id]?.certainty ?? null };
   }).sort((x, y) => (sureness[x.certainty] ?? 3) - (sureness[y.certainty] ?? 3));
 
   out.contents = OUTPUT_VIEWS.filter((v) => built[v]).map((v) => {
@@ -653,16 +515,17 @@ function overviewView(ctx, built) {
   out.hasPrimary = !!ctx.hasPrimary;
   out.suggest = suggestions(ctx, built);
 
-  const v = built.validation;
-  const top = v && [...v.rows].sort((x, y) => (x.rank ?? 99) - (y.rank ?? 99))[0];
-  if (top) {
-    const plan = v.tests.find((t) => t.rank === top.rank);
-    const cl = v.cl[top.c];
-    cl.g.forEach((t) => { t.s?.forEach((x) => r.src.add(x)); t.p?.forEach((x) => r.ptc.add(x)); if (t.b) r.bel.add(t.b); });
-    r.cl.push({ ...cl });
-    out.next = { k: 'test', rank: top.rank, assumption: top.assumption, impact: top.impact, status: top.status, c: r.cl.length - 1, items: plan?.items ?? [], questions: plan?.questions ?? [] };
+  // Test first: the belief the evidence is against, then one nothing backs. Among equals, the one the founder is surest of, then the one most files lean on.
+  const RISK = ['contradicted', 'no evidence', 'mixed'];
+  const hold = (id) => sureness[ctx.beliefs[id]?.certainty] ?? 3;
+  const riskiest = ids.filter((id) => RISK.includes(verdictOf(agg[id])))
+    .sort((x, y) => RISK.indexOf(verdictOf(agg[x])) - RISK.indexOf(verdictOf(agg[y])) || hold(x) - hold(y) || agg[y].files.size - agg[x].files.size)[0];
+  if (riskiest) {
+    const verdict = verdictOf(agg[riskiest]);
+    const s = tagState({ kind: 'belief', verdict: verdict === 'no evidence' ? null : verdict });
+    out.next = { k: 'test', b: riskiest, c: beliefClaim(riskiest, [verdict], s), files: [...agg[riskiest].files], certainty: ctx.beliefs[riskiest]?.certainty ?? null, drop: ctx.beliefs[riskiest]?.drop ?? null };
   } else {
-    const first = out.suggest[0] ?? { skill: SKILL.validation, view: 'validation' };
+    const first = out.suggest[0];
     out.next = { k: 'skill', skill: first.skill, view: first.view };
   }
   return r.finish(out);
@@ -814,6 +677,7 @@ function suggestions(ctx, built) {
   if (!has('journeys')) want.push('journeys');
   if (!has('interview')) want.push('interview');
   if (has('interview') && !has('usability')) want.push('usability');
+  if (!want.length) return [{ skill: '/create-research-repository' }];
   return want.slice(0, 2).map((v) => ({ view: v, skill: SKILL[v] }));
 }
 
@@ -924,16 +788,12 @@ export function build(folder) {
   const ctx = loadContext(folder);
   const built = {};
   built.summary = summaryView(ctx);
-  built.industry = industryView(ctx);
-  built.competitors = competitorsView(ctx);
-  built.voice = voiceView(ctx);
   built.affinity = affinityView(ctx);
   built.cardsort = cardsortView(ctx);
   built.empathy = empathyView(ctx);
   built.jobs = jobsView(ctx);
   built.personas = personasView(ctx);
   built.journeys = journeysView(ctx);
-  built.validation = validationView(ctx);
   for (const v of PLAN_VIEWS) built[v] = planView(ctx, v);
 
   const cited = {};
@@ -1078,7 +938,7 @@ function addNotesUnderTables(md) {
 }
 
 // Runs the page's own script against a stub DOM and returns every string it writes as markup.
-function renderEverything(folder, say) {
+function renderEverything(folder) {
   const BOOK = {};
   for (const v of VIEWS) { const f = join(folder, 'book', 'data', `${v}.js`); if (existsSync(f)) Object.assign(BOOK, loadData(f)); }
   const recorded = [];
@@ -1115,7 +975,7 @@ function renderEverything(folder, say) {
     if (v === 'empathy') for (const x of BOOK.empathy?.maps ?? []) grab(`empathy/${x.slug}`, `#empathy/${x.slug}`);
   }
   const notes = [];
-  for (const [v, d] of Object.entries(BOOK)) for (const c of d.cl) notes.push({ name: `${v} note`, html: hook.noteHTML(c, d, { getAttribute: () => say }) });
+  for (const [v, d] of Object.entries(BOOK)) for (const c of d.cl) notes.push({ name: `${v} note`, html: hook.noteHTML(c, d) });
   return { pages, notes, BOOK, navViews: hook.navViews ? hook.navViews() : [] };
 }
 
@@ -1177,9 +1037,8 @@ async function selfTest() {
     }
     if (data.personas && !data.personas.people.length) fail('personas: no persona found');
     if (data.journeys && !(data.journeys.items[0]?.stages.length)) fail('journeys: no stages');
-    if (data.validation && !data.validation.rows.length) fail('validation: no rows');
-    if (data.voice && !data.voice.mine.rows.length) fail('voice: participants did not come through');
     if (data.overview && !data.overview.next) fail('overview: no next step');
+    if (data.overview?.next?.k !== 'test' || data.overview.next.b !== 'B3') fail('overview: the contradicted belief should be the one to test first'); else pass('overview: the contradicted belief is the one to test first');
     // the new views
     if (!data.summary?.found.rows.length || data.summary.found.rows[0].strength !== 'strong') fail('summary: the rated finding did not come through'); else pass('summary: strength is read as strong');
     if (!data.affinity?.clusters.length || !data.affinity.themes.rows.length) fail('affinity: themes or clusters missing'); else pass('affinity: themes and a cluster');
@@ -1192,14 +1051,14 @@ async function selfTest() {
     write(noCard, { 'cardsort.md': CLEAN['cardsort.md'], 'brief.md': '# Brief: Test idea\n\n- **Idea:** x\n- **Decision:** y\n' });
     build(noCard);
     if (loadData(join(noCard, 'book', 'data', 'cardsort.js')).cardsort.map !== null) fail('cardsort: with no JSON the map should be null'); else pass('cardsort: with no cardsort.json the tables stand alone');
-    const stub = renderEverything(noCard, 'x');
+    const stub = renderEverything(noCard);
     if (/class="heat"/.test(stub.pages.map((x) => x.html).join(''))) fail('cardsort: a heatmap was drawn without data'); else pass('cardsort: no heatmap is drawn without cardsort.json');
     // real mode reads plainly
     const real = join(dir, 'real');
     const realize = (f) => CLEAN[f].replace(/^Proto: .*$/m, 'From research: 5 people, 5 organisations. Every line traces to what they did or said.');
     write(real, { 'brief.md': '# Brief: Test idea\n\n- **Idea:** x\n- **Decision:** y\n', 'sources.md': CLEAN['sources.md'], 'primary.md': CLEAN['primary.md'], 'personas.md': realize('personas.md'), 'jobs.md': realize('jobs.md'), 'journeys.md': realize('journeys.md'), 'empathy.md': realize('empathy.md') });
     build(real);
-    const rr = renderEverything(real, 'x');
+    const rr = renderEverything(real);
     for (const v of ['personas', 'jobs', 'journeys', 'empathy']) {
       const html = rr.pages.filter((x) => x.name.startsWith(v)).map((x) => x.html).join('');
       if (!/From research: 5 people, 5 organisations/.test(html)) fail(`${v}: the real-mode line is not shown`);
@@ -1211,7 +1070,7 @@ async function selfTest() {
     const rowsTen = Array.from({ length: 10 }, (_, i) => `| Stage ${i + 1} | Does ${i} | Hurts | [S4 P1-P2] |`).join('\n');
     write(ten, { 'brief.md': '# Brief: Test idea\n\n- **Idea:** x\n- **Decision:** y\n', 'sources.md': CLEAN['sources.md'], 'primary.md': CLEAN['primary.md'], 'jobs.md': CLEAN['jobs.md'].replace(/(\| Stage \| What they do \| Where it hurts \| Evidence \|\n\|---\|---\|---\|---\|\n)(?:\|.*\n)+/, `$1${rowsTen}\n`) });
     build(ten);
-    const tj = renderEverything(ten, 'x').pages.filter((x) => x.name === 'jobs').map((x) => x.html).join('');
+    const tj = renderEverything(ten).pages.filter((x) => x.name === 'jobs').map((x) => x.html).join('');
     if ((tj.match(/class="seg8"/g) ?? []).length !== 10 || !/--ns:5/.test(tj)) fail('jobs: ten stages were not all drawn in the strip'); else pass('jobs: a ten stage map is drawn from its rows');
 
     // 2. fragment and document contracts
@@ -1235,18 +1094,23 @@ async function selfTest() {
     const sparse = join(dir, 'sparse');
     write(sparse, { 'brief.md': '# Brief: Sparse idea\n\n- **Idea:** x\n- **Decision:** y\n', 'sources.md': CLEAN['sources.md'], 'personas.md': CLEAN['personas.md'] });
     const s2 = build(sparse);
-    const sparsePages = renderEverything(sparse, 'x').pages;
+    const sparsePages = renderEverything(sparse).pages;
     for (const view of OUTPUT_VIEWS.filter((v) => v !== 'personas' && SKILL[v])) {
       const page = sparsePages.filter((x) => x.name === view).map((x) => x.html).join('');
       if (existsSync(join(sparse, 'book', 'data', `${view}.js`))) fail(`${view}: a data file exists though the folder has no ${view} output`);
       else if (!/Nothing here yet/.test(page) || !page.includes(SKILL[view])) fail(`${view}: the page has no empty state naming ${SKILL[view]}`);
       else pass(`${view}: no data file, and the page names ${SKILL[view]} for its empty state`);
     }
-    const navSparse = renderEverything(sparse, 'x').navViews;
+    const navSparse = renderEverything(sparse).navViews;
     if (navSparse.join() !== 'overview,personas,sources') fail(`the navigation lists views with no output: ${navSparse.join()}`); else pass('the navigation lists only views with content');
     if ((s2.built.overview?.suggest ?? []).length < 1 || (s2.built.overview.suggest.length > 2)) fail('overview: it should suggest one or two skills'); else pass(`overview: suggests ${s2.built.overview.suggest.map((x) => x.skill).join(' and ')}`);
     if (s2.built.overview?.next?.k !== 'skill') fail('overview: with outputs missing, the next step should be a skill');
     else pass(`overview: next step is ${s2.built.overview.next.skill} when outputs are missing`);
+    const untested = join(dir, 'untested');
+    write(untested, { 'brief.md': '# Brief: Sparse idea\n\n- **Idea:** x\n- **Decision:** y\n', 'sources.md': CLEAN['sources.md'], 'personas.md': CLEAN['personas.md'].replace('[B2: supported S2]', '[B2: no evidence]') });
+    const untestedNext = build(untested).built.overview.next;
+    if (untestedNext.k !== 'test' || untestedNext.b !== 'B2') fail('overview: a belief with no evidence should be the one to test first'); else pass('overview: a belief with no evidence is tested first when none is contradicted');
+    if (!renderEverything(untested).pages.some((x) => x.name === 'overview' && /Test this first/.test(x.html))) fail('overview: the belief to test first is not shown'); else pass('overview: the belief to test first is shown');
 
     // 5. the title is a real name of two to four words
     const words = index.match(/^<title>(.*)<\/title>/)[1].split(/\s+/).length;
@@ -1276,7 +1140,7 @@ async function selfTest() {
     const evil = join(dir, 'evil');
     write(evil, { ...Object.fromEntries(Object.entries(CLEAN).map(([f, c]) => [f, poison(c, PAYLOAD)])), 'cardsort.json': sortJson([`${PAYLOAD} a`, `${PAYLOAD} b`, `${PAYLOAD} c`, `${PAYLOAD} d`]), 'brief.md': `# Brief: ${PAYLOAD}\n\n- **Idea:** ${PAYLOAD}\n- **For:** ${PAYLOAD}\n- **Market:** ${PAYLOAD}\n- **Decision:** ${PAYLOAD}\n- **Book:** not published\n` });
     build(evil);
-    const rendered = renderEverything(evil, PAYLOAD);
+    const rendered = renderEverything(evil);
     const everything = [...rendered.pages, ...rendered.notes];
     const broken = rendered.pages.filter((x) => /could not be drawn/.test(x.html));
     if (broken.length) fail(`a view failed to draw with payload data: ${broken.map((x) => x.name).join(', ')}`);
@@ -1300,22 +1164,19 @@ async function selfTest() {
       ...CLEAN, 'brief.md': brief,
       'personas.md': CLEAN['personas.md'].replace('| Sam | 90 |', '| Sam | unknown |'),
       'jobs.md': CLEAN['jobs.md'].replace('| Fewer no-shows | 5 | 2 |', '| Fewer no-shows | unknown | 2 |'),
-      'industry.md': CLEAN['industry.md'].replace('| Published | published | 300 |', '| Published | published | unknown |'),
     });
     build(unk);
     const u = {};
-    for (const v of ['personas', 'jobs', 'industry']) Object.assign(u, loadData(join(unk, 'book', 'data', `${v}.js`)));
+    for (const v of ['personas', 'jobs']) Object.assign(u, loadData(join(unk, 'book', 'data', `${v}.js`)));
     if (u.personas.seg.rows[0].pos !== null) fail('an unknown Position was given a number'); else pass('an unknown Position is kept as unknown');
     if (u.jobs.outcomes.rows[0].gap !== null) fail('an unknown Importance was given a gap'); else pass('an unknown Importance is not rated');
-    if (u.industry.size.rows.some((r) => r.value === null) === false) fail('an unknown Value was given a number'); else pass('an unknown market Value is kept as unknown');
-    const shown = renderEverything(unk, 'x');
+    const shown = renderEverything(unk);
     const textOf = (n) => shown.pages.filter((x) => x.name.startsWith(n)).map((x) => x.html).join('\n');
     if (!/position unknown, not placed/.test(textOf('personas'))) fail('an unplaced persona is not listed'); else pass('an unplaced persona is listed');
     if (!/Not rated/.test(textOf('jobs'))) fail('an unrated outcome does not say Not rated'); else pass('an unrated outcome says Not rated');
-    if (!/value unknown, not drawn/.test(textOf('industry'))) fail('an unknown Value is not listed'); else pass('an unknown market Value is listed, not drawn');
     const ledger = loadData(join(full, 'book', 'data', 'sources.js')).sources.rows.find((r) => r.k === 'first-party');
     if (!ledger || ledger.u !== '') fail('a first-party source still carries its Where path'); else pass('a first-party source carries no path');
-    const own = renderEverything(full, 'x').pages.filter((x) => x.name === 'sources').map((x) => x.html).join('');
+    const own = renderEverything(full).pages.filter((x) => x.name === 'sources').map((x) => x.html).join('');
     if (/evidence\/S4/.test(own) || !/own research/.test(own)) fail('the sources view shows a first-party path or lacks "own research"'); else pass('the sources view says "own research" for first-party rows');
 
     // 9. the repository page

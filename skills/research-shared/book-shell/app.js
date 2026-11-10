@@ -1,8 +1,8 @@
 (function () {
 'use strict';
 var BOOK = window.BOOK || {};
-var NAMES = ['overview', 'summary', 'industry', 'competitors', 'voice', 'affinity', 'cardsort', 'empathy', 'personas', 'jobs', 'journeys', 'validation', 'interview', 'usability', 'diary', 'survey', 'sources'];
-var LABEL = { overview: 'Overview', summary: 'Summary', industry: 'Industry', competitors: 'Competitors', voice: 'Voice', affinity: 'Affinity', cardsort: 'Card sort', empathy: 'Empathy', personas: 'Personas', jobs: 'Jobs', journeys: 'Journeys', validation: 'Validation', interview: 'Interview', usability: 'Usability', diary: 'Diary', survey: 'Survey', sources: 'Sources' };
+var NAMES = ['overview', 'summary', 'affinity', 'cardsort', 'empathy', 'personas', 'jobs', 'journeys', 'interview', 'usability', 'diary', 'survey', 'sources'];
+var LABEL = { overview: 'Overview', summary: 'Summary', affinity: 'Affinity', cardsort: 'Card sort', empathy: 'Empathy', personas: 'Personas', jobs: 'Jobs', journeys: 'Journeys', interview: 'Interview', usability: 'Usability', diary: 'Diary', survey: 'Survey', sources: 'Sources' };
 var SKILL = {
   summary: '/summarize-research',
   affinity: '/affinity-diagram', cardsort: '/analyze-card-sort', empathy: '/create-empathy-map',
@@ -12,26 +12,21 @@ var SKILL = {
 /* the navigation: only views with content appear. A group with one view is just that view, not a menu. */
 var GROUPS = [
   { id: 'start', views: ['overview', 'summary'], flat: true },
-  { id: 'market', name: 'Market', views: ['industry', 'competitors', 'voice'] },
   { id: 'data', name: 'Data', views: ['affinity', 'cardsort'] },
   { id: 'people', name: 'People', views: ['empathy', 'personas', 'jobs', 'journeys'] },
-  { id: 'testing', name: 'Testing', views: ['validation', 'interview', 'usability', 'diary', 'survey'] },
+  { id: 'testing', name: 'Testing', views: ['interview', 'usability', 'diary', 'survey'] },
   { id: 'sources', views: ['sources'], flat: true }
 ];
 var PLANS = ['interview', 'usability', 'diary', 'survey'];
 var MAKES = {
   overview: 'The idea, the decision it feeds, and how much of it rests on evidence.',
   summary: 'The short version: what was found, how strongly, how many people stand behind it, who said the opposite, and what to do about it.',
-  industry: 'What the market is and what forces shape it: its size worked bottom-up beside any published figure, who takes money along the chain, and the forces and trends behind it.',
-  competitors: 'What people use instead, in rings from direct competitors to doing nothing, with profiles, the attempts that failed, and where the white space is.',
-  voice: 'What people say about this, clustered by theme and ranked, with your own participants set apart and first. Public voices are paraphrased, never quoted.',
   affinity: 'What your notes group into: themes first, then each cluster as a wall of notes with the people behind it, and the outliers set apart.',
   cardsort: 'How people group your cards: a similarity map, the groups that form with a suggested label, the cards with no clear home, and the labels people used.',
   empathy: 'What one kind of person says, does, thinks and feels in one moment, and where what they say and what they do come apart.',
   jobs: 'The job people are trying to get done, the stages it passes through, and the outcomes today’s tools leave underserved.',
   personas: 'Up to four people worth designing for separately, placed on the one behaviour that splits them, each showing what is known and what is guessed.',
   journeys: 'What happens step by step for one person in one scenario, how it feels along the way, and where it hurts. A future journey proposes what could change.',
-  validation: 'Every belief ranked by how much it matters if wrong and how weakly it is backed, with the cheapest test for the top ones.',
   interview: 'A guide to read from during an interview: who to talk to, what to ask, what to listen for, and which belief each question tests.',
   usability: 'Tasks to give people, what success, partial success and failure look like, and the pass lines that decide the result.',
   diary: 'How a diary study runs: its shape, the prompts people answer, and the day-by-day schedule for them and for you.',
@@ -91,10 +86,6 @@ function fmtDate(d) {
   m = String(d).match(/^(\d{4})-(\d{2})$/);
   if (m) return MON[Number(m[2]) - 1] + ' ' + m[1];
   return d;
-}
-function fmtNum(n) {
-  if (n == null) return '';
-  return Math.abs(n) >= 1000 ? n.toLocaleString('en-GB', { maximumFractionDigits: 0 }) : String(Math.round(n * 100) / 100);
 }
 function host(u) { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return ''; } }
 function isUrl(u) { return /^https?:\/\//i.test(u); }
@@ -194,11 +185,9 @@ function emptyView(v) {
 }
 
 /* ---------- the note: a source, opened in place ---------- */
-function noteHTML(c, d, unit) {
+function noteHTML(c, d) {
   var st = ST[c.s];
   var h = '<p class="st">' + glyph(c.s) + '<b>' + st.n + '</b></p>';
-  var say = unit.getAttribute('data-say');
-  if (say) h += '<p class="said">' + esc(say) + '</p>';
   h += '<p class="def">' + (c.u ? 'No evidence tag on this line, so it counts as an assumption.' : st.say) + '</p>';
 
   if (c.c) h += '<p class="m cite">As cited in the file: ' + esc(c.c) + '.</p>';
@@ -294,7 +283,7 @@ function openNote(unit) {
   note.className = 'note s-' + c.s;
   note.setAttribute('role', 'note');
   note.setAttribute('aria-label', 'Source for this line');
-  note.innerHTML = noteHTML(c, cur, unit);
+  note.innerHTML = noteHTML(c, cur);
   openEl = place(unit, note);
   openUnit = unit; openCell = target;
   unit.classList.add('is-open');
@@ -302,24 +291,11 @@ function openNote(unit) {
   $('.close', note).addEventListener('click', function () { closeNote(true); });
 }
 
-function openClaim(id) {
-  var root = $('#v-' + curName);
-  var u = $('[data-c="' + id + '"]:not([data-mirror])', root);
-  if (!u) return;
-  if (u.hidden) return;
-  lastCell = null;
-  if (openUnit !== u) openNote(u);
-  var r = u.getBoundingClientRect();
-  if (r.top < 60 || r.bottom > window.innerHeight) { try { u.scrollIntoView({ block: 'center' }); } catch (e) { u.scrollIntoView(); } }
-}
-
 document.addEventListener('click', function (e) {
   var t = e.target;
   if (t.closest('a, .note')) return;
   var cp = t.closest('.copy');
   if (cp) { copy(cp); return; }
-  var op = t.closest('[data-open]');
-  if (op) { openClaim(Number(op.getAttribute('data-open'))); return; }
   var jp = t.closest('[data-scroll]');
   if (jp) { var target = $('#' + jp.getAttribute('data-scroll')); if (target) target.scrollIntoView({ block: 'start' }); return; }
   var u = t.closest('[data-c]:not([data-mirror])');
@@ -510,7 +486,12 @@ function beliefTally(ids, who, banner) {
 
 function bannerHTML(b) {
   if (!b) return '';
-  return '<p class="proto' + (b.proto ? '' : b.real ? ' real' : ' done') + '">' + esc(b.text) + '</p>';
+  return '<p class="proto' + (b.real ? ' real' : '') + '">' + esc(b.text) + '</p>';
+}
+
+function beliefMeta(x) {
+  var files = x.files.map(function (f) { return '<a href="#' + f + '">' + LABEL[f] + '</a>'; }).join(', ');
+  return ['<span class="id">' + esc(x.b) + '</span>', x.certainty ? 'The founder was ' + esc(x.certainty) : '', 'seen in ' + files].filter(Boolean).join(' · ');
 }
 
 /* ================= views ================= */
@@ -536,9 +517,8 @@ R.overview = function (d) {
 
   var right;
   if (n.k === 'test') {
-    var first = n.items.filter(function (it) { return /^test$/i.test(it.label); })[0] || n.items[0];
-    right = '<section class="cta-block compact"><h2>Test this first</h2><ul class="lines tf">' + ln(n.c, { pin: true, cls: 'big' }) + '</ul><p class="m">Ranked ' + n.rank + ' · ' + esc(n.impact) + ' impact · ' + esc(n.status) + '</p>' +
-      (first ? '<p class="why"><span>' + esc(first.label || 'Test') + '</span> ' + esc(first.text) + '</p>' : '') + '<p class="cap">The full plan, with what would confirm and what would kill it, is in <a href="#validation">Validation</a>.</p></section>';
+    right = '<section class="cta-block compact"><h2>Test this first</h2><ul class="lines tf">' + ln(n.c, { pin: true, cls: 'big' }) + '</ul><p class="m">' + beliefMeta(n) + '</p>' +
+      (n.drop ? '<p class="why"><span>Would drop it if</span> ' + esc(n.drop) + '</p>' : '') + '<p class="cap">' + esc(ST[C(n.c).s].say) + '</p></section>';
   } else right = '';
   right += runNext(d.suggest, n.k === 'test' ? 'Then run' : 'Run next');
   h += '<div class="ovtop"><div class="ovl">' + left + '</div><div class="ovr">' + right + '</div></div>';
@@ -546,14 +526,12 @@ R.overview = function (d) {
   var w;
   if (d.contradicted.length) {
     w = '<ul class="lines wrong">' + d.contradicted.map(function (x) {
-      var files = x.files.map(function (f) { return '<a href="#' + f + '">' + LABEL[f] + '</a>'; }).join(', ');
-      var meta = ['<span class="id">' + esc(x.b) + '</span>', x.certainty ? 'The founder was ' + esc(x.certainty) : '', 'seen in ' + files].filter(Boolean).join(' · ');
       var cl = d.cl[x.c], sid = null;
       cl.g.forEach(function (t) { if (!sid && t.s && t.s.length) sid = t.s[0]; });
       var src = sid && d.src[sid];
       var found = x.seen[0] ? '<p class="evi"><span>What the research found</span> ' + esc(x.seen[0].t) + '</p>' : '';
       var from = src && src.k === 'first-party' ? '<p class="evi"><span>Source</span> ' + esc(src.t) + ', own research</p>' : src ? '<p class="evi"><span>Source</span> ' + esc(src.t) + ', ' + esc(src.p) + ', ' + esc(fmtDate(src.d)) + (src.k !== 'first-party' && isUrl(src.u) ? ' · <a href="' + esc(src.u) + '" target="_blank" rel="noopener">' + esc(host(src.u)) + '</a>' : '') + '</p>' : '';
-      return ln(x.c, { cls: 'big', after: '<p class="m">' + meta + '</p>' + found + from });
+      return ln(x.c, { cls: 'big', after: '<p class="m">' + beliefMeta(x) + '</p>' + found + from });
     }).join('') + '</ul>';
   } else w = quiet('No belief has been contradicted yet.');
   h += sec('Where your beliefs were wrong', null, w || '');
@@ -567,219 +545,6 @@ R.overview = function (d) {
   if (ct) h += sec('What is in the book', null, ct);
   return h;
 };
-
-/* ---------- industry ---------- */
-function sizeHTML(s) {
-  if (!s.rows.length && !s.notes.length) return '';
-  var byUnit = {};
-  s.rows.forEach(function (r) { if (r.value != null) (byUnit[r.unit.toLowerCase()] = byUnit[r.unit.toLowerCase()] || []).push(r); });
-  var best = null;
-  Object.keys(byUnit).forEach(function (k) {
-    var g = byUnit[k];
-    var bu = function (x) { return x.some(function (r) { return r.kind === 'bottom-up'; }); };
-    if (!best || g.length > best.length || (g.length === best.length && bu(g) && !bu(best))) best = g;
-  });
-  var drawn = best && best.length >= 2 ? best : [];
-  var h = '';
-  if (drawn.length) {
-    var max = Math.max.apply(null, drawn.map(function (r) { return r.value; }));
-    h += '<p class="cap">' + esc(drawn[0].unit) + ', drawn to one scale. A solid bar rests on a figure someone found. A hatched bar is reasoned from sources. A dashed outline is an assumption. The kind of figure is named under each.</p><ul class="bars">' + drawn.map(function (r) {
-      var st = C(r.c).s;
-      var form = st === 'inference' ? 'hatch' : (st === 'evidenced' || st === 'backed' || st === 'confirmed') ? 'solid' : 'dash';
-      var meta = [cap1(r.kind), r.working, [r.year, r.geo].filter(Boolean).join(', '), r.producer].filter(Boolean).join(' · ');
-      return '<li class="row brow bs-' + form + '" data-s="' + st + '" data-c="' + r.c + '"><div class="bl">' + btn(r.c, esc(r.measure)) + '</div>' +
-        '<div class="bt"><span class="bf" style="--w:' + (r.value / max).toFixed(4) + '"></span><b class="bv">' + fmtNum(r.value) + '</b></div>' + (meta ? '<p class="bw">' + esc(meta) + '</p>' : '') + '</li>';
-    }).join('') + '</ul>';
-  }
-  var rest = s.rows.filter(function (r) { return drawn.indexOf(r) < 0; });
-  if (rest.length) {
-    h += (drawn.length ? '<h3 class="mini">Figures in other units, not drawn to the same scale</h3>' : '') + '<ul class="lines other" data-fold="2">' + rest.map(function (r) {
-      var txt = r.measure + ': ' + (r.value != null ? fmtNum(r.value) + ' ' + r.unit : 'value unknown, not drawn');
-      return ln(r.c, { text: txt, after: '<p class="m">' + esc([cap1(r.kind), r.year, r.geo, r.producer].filter(Boolean).join(' \u00b7 ')) + '</p>' });
-    }).join('') + '</ul>';
-  }
-  if (s.notes.length) h += '<h3 class="mini">Working and caveats</h3>' + list(s.notes, { fold: 3 });
-  return h;
-}
-function chainHTML(ch) {
-  if (!ch.rows.length) return '';
-  return '<ol class="chain" data-fold="4">' + ch.rows.map(function (r, i) {
-    return '<li class="row node" data-s="' + C(r.c).s + '" data-c="' + r.c + '"><span class="no" aria-hidden="true">' + (i + 1) + '</span><div class="nh">' + btn(r.c, esc(r.step)) + (r.who ? '<span class="who">' + esc(r.who) + '</span>' : '') +
-      (r.power ? '<span class="pow">Power: ' + esc(r.power) + '</span>' : '') + '</div><p class="takes"><span>Takes</span> ' + esc(r.takes) + '</p></li>';
-  }).join('') + '</ol>';
-}
-function forcesHTML(f) {
-  if (!f.rows.length) return '';
-  var dated = f.rows.filter(function (r) { return r.t != null; });
-  var h = '';
-  if (dated.length > 1) {
-    var lo = Math.floor(Math.min.apply(null, dated.map(function (r) { return r.t; })));
-    var hi = Math.floor(Math.max.apply(null, dated.map(function (r) { return r.t; }))) + 1;
-    var span = hi - lo;
-    var lanes = ['regulation', 'technology', 'economics', 'behaviour'];
-    f.rows.forEach(function (r) { if (lanes.indexOf(r.type) < 0 && r.type) lanes.push(r.type); });
-    lanes = lanes.filter(function (l) { return f.rows.some(function (r) { return r.type === l; }); });
-    h += '<div class="tline" role="group" aria-label="Forces by type and date">';
-    lanes.forEach(function (l) {
-      var seenPos = [];
-      h += '<div class="lane"><span class="ll">' + cap1(l) + '</span><div class="lt">' + dated.filter(function (r) { return r.type === l; }).map(function (r) {
-        var x = (r.t - lo) / span * 100, level = 0;
-        while (seenPos.some(function (p) { return p.l === level && Math.abs(p.x - x) < 2.4; })) level++;
-        seenPos.push({ x: x, l: level });
-        return '<button type="button" class="dot" data-open="' + r.c + '" style="left:' + x.toFixed(2) + '%;top:' + (8 + level * 11) + 'px" aria-label="' + esc(r.force + ', ' + r.date) + '" title="' + esc(r.force + ', ' + r.date) + '"></button>';
-      }).join('') + '</div></div>';
-    });
-    h += '<div class="lane axis"><span class="ll"></span><div class="lt">';
-    for (var y = lo; y <= hi; y++) h += '<span class="yr" style="left:' + ((y - lo) / span * 100).toFixed(2) + '%">' + y + '</span>';
-    h += '</div></div></div><p class="cap">Each dot is one force, placed by type and date. Tap a dot to open it below.</p>';
-  }
-  var years = {};
-  f.rows.forEach(function (r) { var y = r.t != null ? Math.floor(r.t) : 0; (years[y] = years[y] || []).push(r); });
-  h += '<div class="fl" data-fold="4">';
-  Object.keys(years).sort().forEach(function (y) {
-    h += '<div data-g><h3 class="year">' + (Number(y) ? y : 'Undated') + '</h3><ul class="lines forces">' + years[y].sort(function (a, b) { return (a.t || 0) - (b.t || 0); }).map(function (r) {
-      return '<li class="ln" data-s="' + C(r.c).s + '" data-c="' + r.c + '">' + btn(r.c, '<span class="m">' + esc(cap1(r.type) + (r.date ? ', ' + r.date : '')) + '</span><b class="fn">' + esc(r.force) + '.</b> ' + esc(r.what)) + '</li>';
-    }).join('') + '</ul></div>';
-  });
-  return h + '</div>';
-}
-function trendsHTML(t) {
-  if (!t.rows.length) return '';
-  var rows = t.rows.slice().sort(function (a, b) { return (a.dir === 'rising' ? 0 : 1) - (b.dir === 'rising' ? 0 : 1); });
-  var arrow = function (dir) {
-    return '<svg class="ar" viewBox="0 0 14 14" aria-hidden="true" focusable="false"><path d="' + (dir === 'fading' ? 'M7 2v9M3.2 7.4L7 11.2l3.8-3.8' : 'M7 12V3M3.2 6.6L7 2.8l3.8 3.8') + '" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="s-ink"/></svg>';
-  };
-  return '<ul class="lines trends" data-fold="3">' + rows.map(function (r) {
-    var facts = [r.dir ? cap1(r.dir) : '', r.since ? 'since ' + r.since : '', r.backed ? 'backed by ' + r.backed : '', r.reaches ? 'reaches buyers ' + r.reaches : ''].filter(Boolean).join(' · ');
-    return '<li class="ln trend" data-s="' + C(r.c).s + '" data-c="' + r.c + '">' + arrow(r.dir) + '<div>' + btn(r.c, esc(r.trend)) + '<p class="m">' + esc(facts) + (r.why ? '. ' + esc(r.why) : '') + '</p></div></li>';
-  }).join('') + '</ul>';
-}
-R.industry = function (d) {
-  var h = head('Industry', esc(MAKES.industry));
-  h += sec('Market size', d.size.conf, sizeHTML(d.size));
-  h += sec('What this means for the idea', d.means.conf, list(d.means.items, { cls: 'lead', fold: 4 }), 'lead');
-  h += sec('Value chain', d.chain.conf, chainHTML(d.chain));
-  h += sec('Forces', d.forces.conf, forcesHTML(d.forces));
-  h += sec('Trends', d.trends.conf, trendsHTML(d.trends));
-  h += sec('Buyers and budgets', d.buyers.conf, list(d.buyers.items, { fold: 3 }));
-  h += sec('Market definition', d.definition.conf, list(d.definition.items, { fold: 3 }));
-  h += leftover();
-  h += nextCta('industry');
-  return h + noMatch();
-};
-
-/* ---------- competitors ---------- */
-var RINGS = [
-  ['direct', 'Direct', 'Sells the same thing to the same people'],
-  ['adjacent', 'Adjacent', 'Sells something nearby that people stretch to fit'],
-  ['workaround', 'Workarounds', 'Spreadsheets, agencies and doing it in-house'],
-  ['nothing', 'Doing nothing', 'Keeping things as they are'],
-  ['could enter', 'Could enter', 'Not here yet, but could be']
-];
-function ringGlyph(i) {
-  var rs = [2.6, 5.8, 9, 12.2, 15.4], c = '';
-  rs.forEach(function (r, k) {
-    c += k === i ? '<circle cx="18" cy="18" r="' + r + '" fill="' + (k === 0 ? 'var(--ink)' : 'none') + '" stroke="var(--ink)" stroke-width="2.2"/>' : '<circle cx="18" cy="18" r="' + r + '" fill="none" stroke="var(--faint)" stroke-width="1"/>';
-  });
-  return '<svg class="rgl" viewBox="0 0 36 36" aria-hidden="true" focusable="false">' + c + '</svg>';
-}
-function ringsHTML(r) {
-  if (!r.rows.length) return '';
-  var by = {};
-  r.rows.forEach(function (x) { (by[x.ring] = by[x.ring] || []).push(x); });
-  var known = RINGS.map(function (x) { return x[0]; });
-  var extra = Object.keys(by).filter(function (k) { return known.indexOf(k) < 0; });
-  var row = function (items, i, name, desc) {
-    var alts = items.length ? '<ul class="alts">' + items.map(function (x) {
-      return '<li class="alt" data-s="' + C(x.c).s + '" data-c="' + x.c + '" data-slot="#rn' + i + '" data-say="' + esc(x.line + (x.cost ? ' Yearly cost: ' + x.cost + '.' : '')) + '">' + btn(x.c, esc(x.name)) + '</li>';
-    }).join('') + '</ul>' : '<p class="none">None recorded</p>';
-    return '<div class="ringrow" data-g>' + (i < 5 ? ringGlyph(i) : '<span class="rgl"></span>') + '<div class="rnm"><b>' + esc(name) + '</b><span>' + esc(desc) + '</span></div>' + alts + '<div class="slot" id="rn' + i + '"></div></div>';
-  };
-  var h = '<p class="cap">Five rows, from the alternative nearest the buyer to the furthest. Tap a name to read its line and its source.</p><div class="rings">';
-  RINGS.forEach(function (def, i) { h += row(by[def[0]] || [], i, def[1], def[2]); });
-  extra.forEach(function (k, j) { h += row(by[k], 5 + j, cap1(k), ''); });
-  return h + '</div>';
-}
-function matrixHTML(c) {
-  if (!c.rows.length) return '';
-  var jobs = [], alts = [];
-  c.rows.forEach(function (r) { if (jobs.indexOf(r.job) < 0) jobs.push(r.job); if (alts.indexOf(r.alt) < 0) alts.push(r.alt); });
-  var cell = function (j, a) {
-    var r = c.rows.filter(function (x) { return x.job === j && x.alt === a; })[0];
-    if (!r) return '<td class="mx none" data-l="' + esc(a) + '"><span class="nd" aria-label="Not recorded">–</span></td>';
-    var rate = ['strong', 'good', 'weak', 'absent'].indexOf(r.rating) >= 0 ? r.rating : 'unknown';
-    var rword = rate === 'unknown' ? 'Not rated' : cap1(rate);
-    return '<td class="mx" data-l="' + esc(a) + '"><span class="mc" data-s="' + C(r.c).s + '" data-c="' + r.c + '"><button type="button" class="cl dotb" aria-expanded="false" aria-label="' + esc(j + ', ' + a + ': ' + rword.toLowerCase() + '. ' + ST[C(r.c).s].n) + '"><span class="rt r-' + rate + '"></span><span class="rtw">' + esc(rword) + '</span></button></span></td>';
-  };
-  return '<div class="scroll"><table class="matrix"><thead><tr><th scope="col" class="corner">Job</th>' + alts.map(function (a) { return '<th scope="col">' + esc(a) + '</th>'; }).join('') + '</tr></thead><tbody>' +
-    jobs.map(function (j) { return '<tr><th scope="row">' + esc(j) + '</th>' + alts.map(function (a) { return cell(j, a); }).join('') + '</tr>'; }).join('') + '</tbody></table></div>' +
-    '<p class="cap">Strong is a large filled dot, good a smaller one, weak a ring, absent a dash. A dotted ring means not rated. Ratings come from reviews, not feature lists.</p>';
-}
-R.competitors = function (d) {
-  var h = head('Competitors', esc(MAKES.competitors));
-  h += sec('Rings', d.rings.conf, ringsHTML(d.rings));
-  if (d.comparison.rows.length) h += sec('Comparison', d.comparison.conf, matrixHTML(d.comparison));
-  if (d.profiles.items.length) h += sec('Profiles', d.profiles.conf, '<div class="profiles" data-fold="4" data-foldsel=".profile">' + d.profiles.items.map(function (p) {
-    return '<article class="profile" data-g><h3>' + esc(p.name) + '</h3><ul class="lines">' + p.rows.map(function (x) { return ln(x.c, { label: x.label, text: x.text }); }).join('') + '</ul></article>';
-  }).join('') + '</div>');
-  if (d.graveyard.rows.length) h += sec('Graveyard', d.graveyard.conf, '<ul class="grave" data-fold="3">' + d.graveyard.rows.map(function (g) {
-    return '<li class="row gr" data-s="' + C(g.c).s + '" data-c="' + g.c + '"><span class="yr">' + esc(g.year) + '</span><div>' + btn(g.c, esc(g.name)) + '<p class="what">' + esc(g.what) + '</p><p class="why"><span>Why</span> ' + esc(g.why) + '</p></div></li>';
-  }).join('') + '</ul>');
-  var W = [['unclaimed', 'Unclaimed'], ['crowded', 'Crowded'], ['vulnerable', 'Vulnerable']];
-  var wh = '';
-  W.forEach(function (w) {
-    var its = d.white.items.filter(function (x) { return x.kind === w[0]; });
-    if (its.length) wh += '<div class="wcol"><h3>' + w[1] + '</h3>' + list(its, { fold: 3 }) + '</div>';
-  });
-  var others = d.white.items.filter(function (x) { return !x.kind; });
-  if (others.length) wh += '<div class="wcol notes"><h3>' + (wh ? 'Other notes' : 'Notes') + '</h3>' + list(others, { fold: 4 }) + '</div>';
-  if (wh) h += sec('White space', d.white.conf, '<div class="wspace">' + wh + '</div>');
-  h += leftover();
-  h += nextCta('competitors');
-  return h + noMatch();
-};
-
-/* ---------- voice ---------- */
-R.voice = function (d) {
-  var h = head('Voice', esc(MAKES.voice));
-  var mine = d.mine, m = '';
-  if (mine.rows.length) {
-    m = '<ul class="quotes">' + mine.rows.map(function (r) {
-      var who = r.p.map(function (p) { var x = d.ptc[p]; return p + (x && x.role ? ', ' + x.role : '') + (x && x.segment ? ', ' + x.segment : ''); }).join('; ');
-      return '<li class="row quote" data-s="' + C(r.c).s + '" data-c="' + r.c + '">' + btn(r.c, '<q>' + esc(r.v) + '</q>') + '<p class="by">' + esc(who || r.who) + (r.theme ? ' · ' + esc(r.theme) : '') + '</p></li>';
-    }).join('') + '</ul>';
-  }
-  if (mine.notes.length) m += '<div class="none-yet">' + list(mine.notes) + '<p class="m">Your own participants would appear here first, quoted by code.</p></div>';
-  h += sec('Your participants', mine.conf, m, 'mine');
-
-  var maxScore = Math.max.apply(null, [1].concat(d.themes.rows.map(function (t) { return t.score || 0; })));
-  var used = {};
-  var themes = d.themes.rows.map(function (t) {
-    var voices = d.publics.rows.filter(function (v) { return v.theme.toLowerCase() === t.theme.toLowerCase(); });
-    voices.forEach(function (v) { used[v.c] = 1; });
-    var meta = [];
-    if (t.spread) meta.push('<span><b>Spread</b> ' + esc(t.spread) + '</span>');
-    if (t.against) meta.push('<span><b>Against</b> ' + esc(t.against) + '</span>');
-    return '<article class="theme" data-g><div class="tclaim" data-s="' + C(t.c).s + '" data-c="' + t.c + '"><h3>' + btn(t.c, esc(t.theme)) + '</h3>' +
-      '<div class="score"><span class="sbx"><span class="sf" style="width:' + ((t.score || 0) / maxScore * 100).toFixed(1) + '%"></span></span><span class="sn">Score ' + (t.score != null ? t.score : '') + '</span><span class="sd">' + [esc(t.cluster), t.freq != null ? plural(t.freq, 'voice') : '', t.intensity != null ? 'intensity ' + t.intensity + ' of 3' : ''].filter(Boolean).join(' · ') + '</span></div></div>' +
-      '<p class="say">' + esc(t.say) + '</p>' + (meta.length ? '<p class="spread">' + meta.join('') + '</p>' : '') + voicesHTML(voices) + '</article>';
-  }).join('');
-  var loose = d.publics.rows.filter(function (v) { return !used[v.c]; });
-  if (loose.length) themes += '<article class="theme" data-g><h3 class="plain">Other voices</h3>' + voicesHTML(loose) + '</article>';
-  if (d.publics.rows.length || d.themes.rows.length) h += sec('What people say, by theme', d.themes.conf, '<p class="cap">Themes are ranked by score, which is how many voices said it times how strongly. The voices are public posts, paraphrased. None is a quotation.</p><div class="themes" data-fold="4" data-foldsel=".theme">' + themes + '</div>', 'themes', ['Public voices', 'Themes']);
-  if (d.words.items.length) h += sec('The words people use', d.words.conf, list(d.words.items, { fold: 4 }));
-  if (d.means.items.length) h += sec('What this means for the idea', d.means.conf, list(d.means.items, { fold: 4 }));
-  h += leftover();
-  h += nextCta('voice');
-  return h + noMatch();
-};
-function voicesHTML(vs) {
-  if (!vs.length) return '';
-  return '<ul class="voices">' + vs.map(function (v) {
-    var meta = [v.who, v.type, v.date ? fmtDate(v.date) : '', v.stale ? 'stale' : '', v.grade].filter(Boolean).join(' · ');
-    return '<li class="ln voice" data-s="' + C(v.c).s + '" data-c="' + v.c + '">' + btn(v.c, esc(v.v) + '<span class="m">' + esc(meta) + '</span>') + '</li>';
-  }).join('') + '</ul>';
-}
 
 /* ---------- jobs ---------- */
 R.jobs = function (d) {
@@ -877,7 +642,7 @@ R.personas = function (d, param) {
   var h = switcher(ps.map(function (x) { return { slug: x.slug, label: x.name, mark: x.primary ? ' (primary)' : '' }; }), idx, 'personas');
   var proto = !d.banner || d.banner.proto;
   h += '<header class="vh persona-head"><h1 class="h1 display' + (proto ? ' proto' : '') + '" tabindex="-1">' + esc(p.name) + '</h1>' +
-    '<p class="sub">' + (proto ? 'A proto persona' : d.banner && d.banner.real ? 'A persona drawn from research' : 'A persona') + (p.primary ? ', the primary one' : '') + '.</p></header>';
+    '<p class="sub">' + (proto ? 'A proto persona' : 'A persona drawn from research') + (p.primary ? ', the primary one' : '') + '.</p></header>';
   if (p.hero) {
     var hc = C(p.hero.c);
     var gap = hc.s === 'gap';
@@ -974,26 +739,6 @@ R.journeys = function (d, param, param2) {
   return h + noMatch();
 };
 
-/* ---------- validation ---------- */
-R.validation = function (d) {
-  var h = head('Validation', esc(MAKES.validation));
-  var tests = {};
-  d.tests.forEach(function (t) { tests[t.rank] = t; });
-  var rows = d.rows.slice().sort(function (a, b) { return (a.rank || 99) - (b.rank || 99); });
-  var body = '<ol class="ranks">' + rows.map(function (r) {
-    var t = tests[r.rank];
-    var plan = t ? '<dl class="plan">' + t.items.map(function (it) { return '<div><dt>' + esc(it.label || 'Note') + '</dt><dd>' + esc(it.text) + '</dd></div>'; }).join('') + '</dl>' +
-      (t.questions.length ? '<p class="k2">Questions about past behaviour</p><ol class="qs">' + t.questions.map(function (q) { return '<li>' + esc(q) + '</li>'; }).join('') + '</ol>' : '') : '';
-    return '<li class="row rk" data-s="' + C(r.c).s + '" data-c="' + r.c + '"><span class="rn">' + (r.rank != null ? r.rank : '') + '</span><div class="rb"><h3>' + btn(r.c, esc(r.assumption)) + '</h3>' +
-      '<p class="chips2"><span class="vimp i-' + esc(r.impact) + '">' + esc(cap1(r.impact)) + ' impact</span><span class="vstt s-' + esc(r.status) + '">' + esc(cap1(r.status)) + '</span></p>' +
-      (r.why ? '<p><span class="k">Why it matters</span>' + esc(r.why) + '</p>' : '') + (r.now ? '<p><span class="k">Evidence now</span>' + esc(r.now) + '</p>' : '') + plan + '</div></li>';
-  }).join('') + '</ol>';
-  h += sec('Assumptions, riskiest first', null, body, null, ['Assumptions']);
-  h += leftover();
-  if (rows[0]) h += '<section class="cta-block"><h2>Test this first</h2><p class="ctal">' + esc(rows[0].assumption) + '</p><p>Its test is set out above, with the result that would confirm it and the result that would kill it.</p></section>';
-  return h + noMatch();
-};
-
 /* ---------- sources ---------- */
 R.sources = function (d) {
   var h = head('Sources', esc(MAKES.sources));
@@ -1018,9 +763,10 @@ function nextCta(v) {
   if (!ov) return '';
   var n = ov.next;
   if (n.k === 'test') {
-    return '<section class="cta-block"><h2>Test this first</h2><p class="ctal">' + esc(n.assumption) + '</p><p>Ranked ' + n.rank + ', ' + esc(n.impact) + ' impact. The full test plan is in <a href="#validation">Validation</a>.</p></section>';
+    var cl = ov.cl[n.c];
+    return '<section class="cta-block"><h2>Test this first</h2><p class="ctal">' + esc(cl.t) + '</p><p>' + esc(ST[cl.s].say) + '</p></section>';
   }
-  var note = (v === 'voice' || v === 'sources') && !ov.hasPrimary ? 'Interviews or notes dropped in this idea’s inbox folder are read first by every skill, and appear here set apart.' : '';
+  var note = v === 'sources' && !ov.hasPrimary ? 'Interviews or notes dropped in this idea’s inbox folder are read first by every skill, and appear here set apart.' : '';
   return nextSkill(n.skill, 'Next step', note);
 }
 

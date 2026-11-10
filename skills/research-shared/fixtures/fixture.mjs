@@ -46,110 +46,6 @@ export const CLEAN = {
 | "I pencil them in" | workaround | Paper | reported | no | B1 | [S4 P4] |
 | "Still the paper diary" | workaround | Paper | reported | no | B1 | [S4 P5] |
 `,
-  'industry.md': `# Industry: Test idea
-
-## Market definition
-- Independent clinics with one to five practitioners. [S1, S2]
-Confidence: high
-
-## Market size
-| Measure | Kind | Value | Unit | Working | Year | Geography | Producer | Evidence |
-|---|---|---|---|---|---|---|---|---|
-| Bottom-up | bottom-up | 120 | USD millions | 20000 clinics times 6000 USD | 2026 | UK | This research | [inference S1, S2] |
-| Published | published | 300 | USD millions | Stated in report | 2025 | UK | Example Stats | [S1] |
-Confidence: low
-
-## Value chain
-| Step | Who | Takes | Power | Evidence |
-|---|---|---|---|---|
-| Referral | GP | Nothing | regulation | [S1, S2] |
-Confidence: high
-
-## Buyers and budgets
-- The owner decides and pays. [S4 P1-P5]
-Confidence: high
-
-## Forces
-| Force | Type | What is happening | Date | Evidence |
-|---|---|---|---|---|
-| Waiting lists | economics | Lengthening | 2026 | [S1] |
-Confidence: medium
-
-## Trends
-| Trend | Direction | Since | Why now | Backed by | Reaches buyers | Evidence |
-|---|---|---|---|---|---|---|
-| Online booking | rising | 2023 | Patients expect it | behaviour | now | [S2] |
-Confidence: low
-
-## What this means for the idea
-- Small clinics are reachable through referral networks. [inference S1, S2]
-Confidence: low
-
-${NOTES}`,
-  'competitors.md': `# Competitors: Test idea
-
-## Rings
-| Alternative | Ring | Yearly cost | One line | Evidence |
-|---|---|---|---|---|
-| Paper diary | workaround | 40 GBP | Free and familiar | [S4 P1-P3] |
-Confidence: high
-
-## Profiles
-### Example Book
-- **Price:** 30 USD a month, seen 2026-11. [S2]
-- **Positioning:** "Booking made easy" [S2]
-- **Target:** Small clinics. [S2]
-- **Praise:** Quick to set up. [S5]
-- **Complaints:** Reminders fail. [S5]
-- **Switching:** Exporting patients takes a week. [S5]
-Confidence: low
-
-## Graveyard
-| Attempt | What happened | Year | Why | Evidence |
-|---|---|---|---|---|
-| None found | No failed attempts surfaced | 2026 | Unknown | [gap] |
-Confidence: low
-
-## Comparison
-| Job | Alternative | Rating | Evidence |
-|---|---|---|---|
-| Reduce no-shows | Paper diary | Absent | [S4 P1-P2] |
-Confidence: high
-
-## White space
-- **Unclaimed:** Reminders that actually arrive. [inference S5]
-Confidence: low
-
-${NOTES}`,
-  'voice.md': `# Voice: Test idea
-
-## Your participants
-| Verbatim | Who | Theme | Evidence |
-|---|---|---|---|
-| "I still write it in the diary" | Clinic owner | Paper | [S4 P1] |
-Confidence: medium
-
-## Public voices
-| Voice | Who | Theme | Grade | Source type | Date | Evidence |
-|---|---|---|---|---|---|---|
-| No-shows wreck the working week | Physiotherapist | No-shows | reported | forum | 2026-04 | [S5] |
-Confidence: low
-
-## Themes
-| Theme | Cluster | Frequency | Intensity | Score | Spread | What people say | Against | Evidence |
-|---|---|---|---|---|---|---|---|---|
-| No-shows | pains | 1 | 3 | 3 | 1 forum, 1 role | Lost income | none found | [S5] |
-Confidence: low
-
-## The words people use
-- "the diary" [S4 P1]
-Confidence: medium
-
-## What this means for the idea
-- Reminders are the wedge. [inference S5]
-Confidence: low
-
-${NOTES}`,
   'jobs.md': `# Jobs: Test idea
 
 Proto: 1 of 1 beliefs validated. Treat everything else as an assumption.
@@ -524,7 +420,7 @@ ${NOTES}`,
 ## Analysis plan
 | Decision | Number to look at | Cut by | Result that changes the decision |
 |---|---|---|---|
-| Build | Share on paper | Size | Under 15 percent |
+| Build | Share on paper (tests B1) | Size | Under 15 percent |
 
 ## Questions
 | Number | Question | Type | Options | Skip logic | Feeds |
@@ -563,7 +459,7 @@ ${NOTES}`,
 ## Open questions
 | Question | Idea | Impact | Source |
 |---|---|---|---|
-| Would owners pay? | Test idea | high | validation.md |
+| Would owners pay? | Test idea | high | summary.md |
 
 ## Consent and retention
 | Study | Participants agreed to | Raw files kept until | Status |
@@ -571,46 +467,26 @@ ${NOTES}`,
 | Five interviews | Internal use | 2027-11 | In date |
 
 ${NOTES}`,
-  'validation.md': `# Validation: Test idea
-
-## Assumptions
-| Rank | Assumption | Impact | Why it matters | Evidence now | Status | Evidence |
-|---|---|---|---|---|---|---|
-| 1 | Owners would pay monthly | high | Sets the model | One market note | open | [B2: supported S2] |
-| 2 | Clinics run on paper | medium | Sets onboarding | Five interviews | confirmed | [B1: confirmed S4 P1-P5] |
-
-## Test plan
-### 1. Owners would pay monthly
-- **Test:** Fake door pricing page.
-- **Confirmed if:** 5 percent click.
-- **Killed if:** Under 1 percent click.
-- **Who to recruit:** Solo clinic owners.
-- **Questions:**
-  - What did you last pay for software?
-
-${NOTES}`,
 };
 
 export const MUTATIONS = [
-  { expect: 'UNKNOWN_SOURCE', file: 'industry.md', find: '| [S1] |', replace: '| [S99] |' },
+  { expect: 'UNKNOWN_SOURCE', file: 'jobs.md', find: '| 5 | 2 | [S5] |', replace: '| 5 | 2 | [S99] |' },
   { expect: 'UNKNOWN_BELIEF', file: 'personas.md', find: '[B2: supported S2]', replace: '[B9: supported S2]' },
-  { expect: 'UNKNOWN_PARTICIPANT', file: 'competitors.md', find: '[S4 P1-P3]', replace: '[S4 P1-P9]' },
-  { expect: 'NO_TAG', file: 'industry.md', find: 'one to five practitioners. [S1, S2]', replace: 'one to five practitioners.' },
-  { expect: 'LOOSE_PARAGRAPH', file: 'industry.md', find: '## Buyers and budgets\n', replace: '## Buyers and budgets\nA paragraph with no evidence.\n' },
-  { expect: 'NO_CONFIDENCE', file: 'competitors.md', find: '- **Unclaimed:** Reminders that actually arrive. [inference S5]\nConfidence: low', replace: '- **Unclaimed:** Reminders that actually arrive. [inference S5]' },
-  { expect: 'BAD_CONFIDENCE', file: 'voice.md', find: '- "the diary" [S4 P1]\nConfidence: medium', replace: '- "the diary" [S4 P1]\nConfidence: certain' },
-  { expect: 'CONFIDENCE_NOT_EARNED', file: 'industry.md', find: '| [S2] |\nConfidence: low', replace: '| [S2] |\nConfidence: high' },
-  { expect: 'CONFIDENCE_NOT_EARNED', file: 'competitors.md', find: '| [gap] |\nConfidence: low', replace: '| [gap] |\nConfidence: high' },
-  { expect: 'MISSING_SECTION', file: 'competitors.md', find: '## White space', replace: '## Whitespace' },
-  { expect: 'EXTRA_SECTION', file: 'voice.md', find: '## Run notes', replace: '## Surprise\n- A section nobody asked for. [S5]\nConfidence: low\n\n## Run notes' },
+  { expect: 'UNKNOWN_PARTICIPANT', file: 'jobs.md', find: '[S4 P1-P3]', replace: '[S4 P1-P9]' },
+  { expect: 'NO_TAG', file: 'summary.md', find: 'out of habit. [S4 P1-P5]', replace: 'out of habit.' },
+  { expect: 'LOOSE_PARAGRAPH', file: 'summary.md', find: '## Where people disagreed\n', replace: '## Where people disagreed\nA paragraph with no evidence.\n' },
+  { expect: 'NO_CONFIDENCE', file: 'affinity.md', find: '- Nobody raised price first. [inference S4]\nConfidence: medium', replace: '- Nobody raised price first. [inference S4]' },
+  { expect: 'BAD_CONFIDENCE', file: 'summary.md', find: '- Whether owners would pay monthly. [gap]\nConfidence: low', replace: '- Whether owners would pay monthly. [gap]\nConfidence: certain' },
+  { expect: 'CONFIDENCE_NOT_EARNED', file: 'jobs.md', find: '| 5 | 2 | [S5] |\nConfidence: low', replace: '| 5 | 2 | [S5] |\nConfidence: high' },
+  { expect: 'CONFIDENCE_NOT_EARNED', file: 'affinity.md', find: '| [gap] |\nConfidence: low', replace: '| [gap] |\nConfidence: high' },
+  { expect: 'MISSING_SECTION', file: 'affinity.md', find: '## What surprised us', replace: '## Surprises' },
+  { expect: 'EXTRA_SECTION', file: 'summary.md', find: '## Run notes', replace: '## Surprise\n- A section nobody asked for. [S5]\nConfidence: low\n\n## Run notes' },
   { expect: 'MISSING_SUBSECTION', file: 'personas.md', find: '### Goals', replace: '### Aims' },
   { expect: 'NO_BANNER', file: 'personas.md', find: 'Proto: 1 of 2 beliefs validated. Treat everything else as an assumption.', replace: '' },
   { expect: 'BANNER_COUNT', file: 'personas.md', find: 'Proto: 1 of 2 beliefs', replace: 'Proto: 2 of 2 beliefs' },
   { expect: 'BAD_VERDICT', file: 'personas.md', find: '[B2: supported S2]', replace: '[B2: probably S2]' },
   { expect: 'UNDER_BAR', file: 'jobs.md', find: '[B1: confirmed S4 P1-P5]', replace: '[B1: confirmed S4 P1-P2]' },
-  { expect: 'VALIDATED_TOO_SOON', file: 'personas.md', find: 'Proto: 1 of 2 beliefs validated. Treat everything else as an assumption.', replace: 'Validated: 1 of 2 beliefs confirmed, 2026-11-09.' },
-  { expect: 'BAD_SCORE', file: 'voice.md', find: '| 1 | 3 | 3 |', replace: '| 1 | 3 | 9 |' },
-  { expect: 'CONFIDENCE_NOT_EARNED', file: 'industry.md', find: '- The owner decides and pays. [S4 P1-P5]\nConfidence: high', replace: '- The owner decides and pays. [gap]\nConfidence: medium' },
+  { expect: 'CONFIDENCE_NOT_EARNED', file: 'summary.md', find: '- Clinics stay on paper out of habit. [S4 P1-P5]\nConfidence: high', replace: '- Clinics stay on paper out of habit. [gap]\nConfidence: medium' },
   { expect: 'UNDER_BAR', file: 'primary.md', find: '| "Still the paper diary" | workaround | Paper | reported |', replace: '| "Still the paper diary" | workaround | Paper | opinion |' },
   { expect: 'UNDER_BAR', file: 'primary.md', find: '| P5 | Clinic owner | Group | O5 | S4 |', replace: '| P5 | Clinic owner | Group | O1 | S4 |' },
   { expect: 'BAD_VALUE', file: 'journeys.md', find: '| Am I full? | 3 |', replace: '| Am I full? | 9 |' },
@@ -618,20 +494,16 @@ export const MUTATIONS = [
   { expect: 'BAD_VALUE', file: 'personas.md', find: '| Sam | 90 |', replace: '| Sam | 140 |' },
   { expect: 'BAD_VALUE', file: 'personas.md', find: '- **Primary:** Sam, because the owner decides. [S4 P1-P2]\n', replace: '' },
   { expect: 'BAD_VALUE', file: 'jobs.md', find: '| Plan | Plan the week | Double bookings | [S4 P1-P3] |\n| Fill | Finds the diary | Left at home | [S4 P1-P3] |\n| Remind | Texts patients | Slow | [S4 P1-P3] |\n', replace: '' },
-  { expect: 'BAD_VALUE', file: 'competitors.md', find: '| Absent |', replace: '| Great |' },
-  { expect: 'BAD_VALUE', file: 'industry.md', find: '| published | 300 |', replace: '| guess | 300 |' },
-  { expect: 'BAD_VALUE', file: 'validation.md', find: '| high | Sets the model |', replace: '| huge | Sets the model |' },
   { expect: 'UNDER_BAR', file: 'primary.md', find: '| reported | no | B1 | [S4 P5] |', replace: '| reported | no | B2 | [S4 P5] |' },
   { expect: 'UNDER_BAR', file: 'primary.md', find: '| reported | no | B1 | [S4 P5] |', replace: '| reported | yes | B1 | [S4 P5] |' },
   { expect: 'UNDER_BAR', file: 'jobs.md', find: '[B1: confirmed S4 P1-P5]', replace: '[B1: confirmed S3 threshold]' },
   { expect: 'BAD_TAG', file: 'personas.md', find: '[B2: supported S2]', replace: '[B2 supported S2]' },
-  { expect: 'BAD_TAG', file: 'industry.md', find: '| [S1] |', replace: '| [S1x] |' },
-  { expect: 'BAD_TAG', file: 'competitors.md', find: '[inference S5]', replace: '[inference]' },
+  { expect: 'BAD_TAG', file: 'jobs.md', find: '| 5 | 2 | [S5] |', replace: '| 5 | 2 | [S5x] |' },
+  { expect: 'BAD_TAG', file: 'affinity.md', find: '[inference S4]', replace: '[inference]' },
   { expect: 'BAD_TAG', file: 'journeys.md', find: '[B3: contradicted S5]', replace: '[B3: contradicted]' },
-  { expect: 'STATUS_MISMATCH', file: 'validation.md', find: '| open | [B2: supported S2] |', replace: '| confirmed | [B2: supported S2] |' },
-  { expect: 'CONFLICTING_VERDICT', file: 'personas.md', find: '[B2: supported S2]', replace: '[B2: contradicted S2]'  },
-  { expect: 'EMPTY_SECTION', file: 'industry.md', find: '- The owner decides and pays. [S4 P1-P5]\nConfidence: high', replace: 'Confidence: high' },
-  { expect: 'CONFIDENCE_NOT_EARNED', file: 'industry.md', find: '- The owner decides and pays. [S4 P1-P5]\nConfidence: high', replace: '- The owner decides and pays. [inference S1, S2]\nConfidence: medium' },
+  { expect: 'CONFLICTING_VERDICT', file: 'personas.md', find: '[B1: confirmed S4 P1-P5]', replace: '[B1: contradicted S2]' },
+  { expect: 'EMPTY_SECTION', file: 'summary.md', find: '- Clinics stay on paper out of habit. [S4 P1-P5]\nConfidence: high', replace: 'Confidence: high' },
+  { expect: 'CONFIDENCE_NOT_EARNED', file: 'summary.md', find: '- Clinics stay on paper out of habit. [S4 P1-P5]\nConfidence: high', replace: '- Clinics stay on paper out of habit. [inference S1, S2]\nConfidence: medium' },
   { expect: 'BAD_TAG', file: 'journeys.md', find: '[proposed S4, S5]', replace: '[proposed soon]' },
   { expect: 'BAD_VALUE', file: 'journeys.md', find: '| Patients may not bother |', replace: '| Patients may not bother |', also: [['| 4 | Patients', '| 8 | Patients']] },
   { expect: 'BAD_VALUE', file: 'summary.md', find: '| strong | 5 | 5 |', replace: '| huge | 5 | 5 |' },
@@ -644,9 +516,10 @@ export const MUTATIONS = [
   { expect: 'BAD_VALUE', file: 'cardsort.md', find: '| Book | Cancel | 1 |', replace: '| Book | Cancel | 16 of 16 |' },
   { expect: 'UNDER_BAR', file: 'primary.md', find: '| P5 | Clinic owner | Group | O5 | S4 |', replace: '| P5 | Clinic owner | Group | not recorded | S4 |' },
   { expect: 'NOT_PROPOSED', file: 'journeys.md', find: '[proposed S4, S5]', replace: '[S4 P1-P3]' },
-  { expect: 'PROPOSED_OUT_OF_PLACE', file: 'industry.md', find: '| [S1] |', replace: '| [proposed S1] |' },
+  { expect: 'PROPOSED_OUT_OF_PLACE', file: 'jobs.md', find: '| 5 | 2 | [S5] |', replace: '| 5 | 2 | [proposed S5] |' },
   { expect: 'UNDER_BAR', file: 'empathy.md', find: 'Proto: 1 of 1 beliefs validated. Treat everything else as an assumption.', replace: 'From research: 0 people, 0 organisations. Every finding traces to what they did or said.', also: [['[B1: confirmed S4 P1-P5]', '[gap]'], ['[S4 P1]', '[gap]'], ['[S4 P1-P2]', '[gap]'], ['- The week is slipping away. [inference S4, S1]', '- The week is slipping away. [gap]'], ['- Rushed. [inference S4, S1]', '- Rushed. [gap]']] },
   { expect: 'UNDER_BAR', file: 'journeys.md', find: '[B3: contradicted S5]', replace: '[B3: confirmed S4 threshold]' },
+  { expect: 'CLEAN', name: 'a threshold result on a belief the survey plan names', file: 'jobs.md', find: '[B1: confirmed S4 P1-P5]\nConfidence: high', replace: '[B1: confirmed S4 threshold]\nConfidence: medium' },
   { expect: 'BAD_LEDGER', file: 'sources.md', find: '| https://example.org/e |', replace: '| inbox/raw.txt |' },
   { expect: 'REAL_HAS_DESK', file: 'affinity.md', find: '[S4 P2]', replace: '[S2]' },
   { expect: 'BAD_VALUE', file: 'summary.md', find: '| none found | [S4 P1-P5] |', replace: '| none found | [S4 P1-P2] |' },

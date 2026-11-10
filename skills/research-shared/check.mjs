@@ -9,13 +9,13 @@ import { fileURLToPath } from 'node:url';
 import { claims, firstTable, needsBar, parseFile, parseMarkdown, tableRows } from './parse.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUTPUTS = ['primary.md', 'industry.md', 'competitors.md', 'voice.md', 'affinity.md', 'cardsort.md', 'empathy.md', 'jobs.md', 'personas.md', 'journeys.md', 'validation.md', 'interview-script.md', 'usability-plan.md', 'diary-study.md', 'survey.md', 'summary.md', 'repository.md'];
+const OUTPUTS = ['primary.md', 'affinity.md', 'cardsort.md', 'empathy.md', 'jobs.md', 'personas.md', 'journeys.md', 'interview-script.md', 'usability-plan.md', 'diary-study.md', 'survey.md', 'summary.md', 'repository.md'];
 const PROTO = ['jobs.md', 'personas.md', 'journeys.md', 'empathy.md'];
 const KINDS = ['original', 'secondary', 'vendor', 'opinion', 'forum', 'first-party'];
 const STATUSES = ['verified', 'unverified'];
 const LEVELS = { low: 0, medium: 1, high: 2 };
 const BAR_PEOPLE = 5;
-const RECOMMENDS = ['Design implications', 'How we would know this is wrong', 'What this means for the idea', 'What this means for the structure', 'What this changes', 'Cards without a clear home'];
+const RECOMMENDS = ['Design implications', 'How we would know this is wrong', 'What this means for the structure', 'What this changes', 'Cards without a clear home'];
 
 function templateFor(file) {
   const text = readFileSync(join(HERE, 'templates', file), 'utf8');
@@ -153,32 +153,6 @@ function valueChecks(file, doc, add, people) {
       if (!ratedOrUnknown(row.Importance, 1, 5) || !ratedOrUnknown(row.Satisfaction, 1, 5)) add('BAD_VALUE', line, 'Importance and Satisfaction are 1 to 5 or unknown');
     });
   }
-  if (file === 'competitors.md') {
-    each(section('Rings')[0], (row, line) => oneOf(row.Ring, ['direct', 'adjacent', 'workaround', 'nothing', 'could enter'], 'Ring', line));
-    each(section('Comparison')[0], (row, line) => oneOf(row.Rating, ['strong', 'good', 'weak', 'absent', 'unknown'], 'Rating', line));
-  }
-  if (file === 'industry.md') {
-    const size = section('Market size')[0];
-    const kinds = [];
-    each(size, (row, line) => {
-      kinds.push(row.Kind);
-      oneOf(row.Kind, ['bottom-up', 'published', 'forecast'], 'Kind', line);
-      if (row.Value?.toLowerCase() !== 'unknown' && Number.isNaN(Number(row.Value))) add('BAD_VALUE', line, `Value "${row.Value}" is not a plain number or unknown`);
-    });
-    if (size && !kinds.includes('bottom-up')) add('BAD_VALUE', size.line, 'no bottom-up row');
-  }
-  if (file === 'validation.md') {
-    const block = section('Assumptions')[0] && firstTable(section('Assumptions')[0]);
-    if (block) tableRows(block).forEach((row, i) => {
-      const { line, tags } = block.rows[i];
-      oneOf(row.Impact, ['high', 'medium', 'low'], 'Impact', line);
-      oneOf(row.Status, ['open', 'confirmed', 'refuted', 'mixed'], 'Status', line);
-      const status = row.Status?.toLowerCase();
-      const settled = tags.filter(needsBar).map((t) => t.verdict);
-      const matches = status === 'open' ? settled.length === 0 : settled.includes(status);
-      if (!matches) add('STATUS_MISMATCH', line, `Status "${row.Status}" does not match its evidence tag`);
-    });
-  }
 }
 
 function idsFromTable(path, heading) {
@@ -224,22 +198,6 @@ export function checkFolder(folder) {
     const plan = parseFile(surveyPath).sections.find((s) => s.name === 'Analysis plan');
     const planTable = plan && firstTable(plan);
     if (planTable) planTable.rows.forEach((row) => (row.text.match(/\bB\d+\b/g) ?? []).forEach((id) => plannedBeliefs.add(id)));
-  }
-  const openHighBeliefs = { any: false, ids: new Set() };
-  const validationPath = join(folder, 'validation.md');
-  if (existsSync(validationPath)) {
-    const section = parseFile(validationPath).sections.find((s) => s.name === 'Assumptions');
-    const block = section && firstTable(section);
-    if (block) {
-      block.rows.forEach((row, i) => {
-        const data = tableRows(block)[i];
-        row.tags.flatMap((t) => t.beliefs).forEach((id) => plannedBeliefs.add(id));
-        if (data.Impact?.toLowerCase() !== 'high' || data.Status?.toLowerCase() !== 'open') return;
-        const ids = row.tags.flatMap((t) => t.beliefs);
-        if (ids.length === 0) openHighBeliefs.any = true;
-        ids.forEach((id) => openHighBeliefs.ids.add(id));
-      });
-    }
   }
 
   for (const file of OUTPUTS) {
@@ -321,12 +279,6 @@ export function checkFolder(folder) {
         if (level !== null && (weakest === null || LEVELS[level] < LEVELS[weakest])) weakest = level;
       }
       if (lines.length && lines.every((c) => c.tags.length && c.tags.every((t) => t.kind === 'gap' || t.kind === 'proposed'))) weakest = 'low';
-      if (file === 'voice.md' && section.name === 'Themes') {
-        const block = firstTable(section);
-        if (block) tableRows(block).forEach((row, i) => {
-          if (Number(row.Frequency) * Number(row.Intensity) !== Number(row.Score)) add('BAD_SCORE', block.rows[i].line, `${row.Theme}: ${row.Frequency} times ${row.Intensity} is not ${row.Score}`);
-        });
-      }
 
       if (entry.mode === 'full' && lines.length === 0) add('EMPTY_SECTION', section.line, `"${section.name}" has no claims and no [gap]`);
       if (entry.mode === 'full') {
@@ -347,7 +299,6 @@ export function checkFolder(folder) {
 
     if (PROTO.includes(file)) {
       const proto = doc.banner?.match(/^Proto: (\d+) of (\d+) beliefs validated(?:, (\d+) refuted)?\./);
-      const validated = doc.banner?.match(/^Validated: (\d+) of (\d+) beliefs confirmed(?:, (\d+) refuted)?, \d{4}-\d{2}-\d{2}\./);
       const real = doc.banner?.match(/^From research: (\d+) (?:people|person), (\d+) organisations?\./);
       if (real) {
         const orgs = new Set([...citedPeople].map((p) => people.orgs.get(p) ?? p));
@@ -357,17 +308,12 @@ export function checkFolder(folder) {
         if (allOrgs.size < BAR_PEOPLE) add('UNDER_BAR', doc.bannerLine, `real mode needs ${BAR_PEOPLE} organisations in primary.md, it holds ${allOrgs.size}`);
         for (const id of citedSources) if (sources.get(id)?.Kind !== 'first-party') add('REAL_HAS_DESK', doc.bannerLine, `${id} is desk research, and a file built in real mode cites only primary research`);
         if (inFile.size) add('REAL_HAS_BELIEF', doc.bannerLine, 'a file built in real mode cites beliefs; it should cite only what people did and said');
-      } else if (!proto && !validated) add('NO_BANNER', 1, 'no Proto, Validated or From research banner after the title');
+      } else if (!proto) add('NO_BANNER', 1, 'no Proto or From research banner after the title');
       else {
-        const banner = proto ?? validated;
         const m = inFile.size;
         const n = [...inFile.values()].filter((v) => v.has('confirmed')).length;
         const r = [...inFile.values()].filter((v) => v.has('refuted')).length;
-        if (Number(banner[1]) !== n || Number(banner[2]) !== m || Number(banner[3] ?? 0) !== r) add('BANNER_COUNT', doc.bannerLine, `banner says ${banner[1]} of ${banner[2]} and ${banner[3] ?? 0} refuted, the file has ${n} of ${m} and ${r} refuted`);
-        if (validated) {
-          const blocked = openHighBeliefs.any || [...inFile.keys()].some((id) => openHighBeliefs.ids.has(id));
-          if (blocked || !existsSync(validationPath)) add('VALIDATED_TOO_SOON', doc.bannerLine, 'a high-impact assumption touching this file is still open');
-        }
+        if (Number(proto[1]) !== n || Number(proto[2]) !== m || Number(proto[3] ?? 0) !== r) add('BANNER_COUNT', doc.bannerLine, `banner says ${proto[1]} of ${proto[2]} and ${proto[3] ?? 0} refuted, the file has ${n} of ${m} and ${r} refuted`);
       }
     }
   }

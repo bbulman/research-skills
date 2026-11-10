@@ -94,7 +94,7 @@ export function parseMarkdown(source) {
       return;
     }
     if (!section) {
-      if (doc.banner === null && /^(Proto:|Validated:|From research:)/.test(line)) { doc.banner = line.trim(); doc.bannerLine = n; return; }
+      if (doc.banner === null && /^(Proto:|From research:)/.test(line)) { doc.banner = line.trim(); doc.bannerLine = n; return; }
       doc.preamble.push({ text: line, line: n });
       return;
     }
