@@ -1,5 +1,14 @@
 # research-skills
 
+> **This has moved.** These skills now live in the [ux-os plugin](https://github.com/bbulman/ux-os/tree/main/plugin), with five more commands, a link from every finding to the passage behind it, and a way to connect your design system. Install that instead:
+>
+> ```
+> /plugin marketplace add bbulman/ux-os
+> /plugin install ux-os@ux-os
+> ```
+>
+> Commands there are typed `/ux-os:<name>`, such as `/ux-os:create-personas`. Everything below is the earlier version, kept so existing installs still have a source.
+
 Twelve Claude Code skills for UX research, from planning a study to turning what you heard into something you can act on.
 
 They're part of [UX-OS](https://bbulman.github.io/ux-os/research/).
